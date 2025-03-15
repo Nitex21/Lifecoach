@@ -7,7 +7,8 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(__dirname)); // 添加静态文件服务配置
 
-const API_KEY = '01054f37-0ef6-4aa8-bc98-2d0c16904d23';
+require('dotenv').config();
+const API_KEY = process.env.API_KEY;
 const API_URL = 'https://ark.cn-beijing.volces.com/api/v3/chat/completions';
 
 app.post('/api/chat', async (req, res) => {
