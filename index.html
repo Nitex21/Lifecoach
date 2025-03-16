@@ -67,6 +67,34 @@
       border-radius: 4px;
       cursor: pointer;
     }
+    .typing-indicator {
+      width: 40px;
+      height: 40px;
+      border: 3px solid #f0f0f0;
+      border-radius: 50%;
+      border-top-color: #1890ff;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .error-message {
+      display: flex;
+      align-items: center;
+      padding: 12px;
+      background: #fff4f4;
+      border-radius: 8px;
+      border: 1px solid #ffccc7;
+      color: #ff4d4f;
+      margin: 10px 0;
+    }
+    .error-message::before {
+      content: '❗';
+      margin-right: 8px;
+      font-size: 18px;
+    }
   </style>
 </head>
 <body>
@@ -82,6 +110,10 @@
   <script>
 
     document.addEventListener('DOMContentLoaded', () => {
+      // 加载历史记录
+      const history = JSON.parse(localStorage.getItem('chatHistory') || '[]');
+      history.forEach(msg => appendMessage(msg.role, msg.content));
+
       document.getElementById('send-button').addEventListener('click', sendMessage);
       document.getElementById('message-input').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
@@ -95,8 +127,10 @@
       const message = userInput.value.trim();
       if (!message) return;
 
-      // 添加用户消息到界面
+      // 添加用户消息和加载状态
       appendMessage('user', message);
+      const loadingMsgId = 'loading-' + Date.now();
+      appendMessage('assistant', `<div id="${loadingMsgId}" class="typing-indicator"></div>`);
       userInput.value = '';
 
       try {
@@ -136,12 +170,18 @@
         }
       } catch (error) {
         console.error('请求出错:', error);
-        appendMessage('error', '对话暂时不可用，请稍后重试');
+        document.getElementById(loadingMsgId).remove();
+        appendMessage('error', '<div class="error-message">网络连接异常，建议检查网络后重试</div>');
+        // 自动滚动到底部
+        const container = document.getElementById('chat-container');
+        container.scrollTop = container.scrollHeight;
       }
     }
 
     // 消息显示相关函数
+    // 增强自动滚动逻辑
     function appendMessage(role, content) {
+      saveToHistory(role, content);
       const container = document.getElementById('chat-container');
       const timestamp = new Date().toLocaleTimeString('zh-CN', { 
         hour: '2-digit', 
@@ -163,7 +203,11 @@
       `;
       
       container.appendChild(messageDiv);
-      container.scrollTop = container.scrollHeight;
+      // 添加智能滚动
+      const isNearBottom = container.scrollHeight - container.clientHeight <= container.scrollTop + 100;
+      if(isNearBottom) {
+        container.scrollTop = container.scrollHeight;
+      }
     }
 
     function updateMessage(role, content) {
@@ -175,6 +219,16 @@
         appendMessage(role, content);
       }
       container.scrollTop = container.scrollHeight;
+    }
+
+    function saveToHistory(role, content) {
+      const history = JSON.parse(localStorage.getItem('chatHistory') || '[]');
+      history.push({
+        role,
+        content,
+        timestamp: new Date().toISOString()
+      });
+      localStorage.setItem('chatHistory', JSON.stringify(history.slice(-50))); // 保留最近50条
     }
 </script>
 
