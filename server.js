@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const fetch = require('node-fetch');
+const fetch = require('node-fetch').default;
 
 const app = express();
 app.use(cors());
@@ -32,17 +32,14 @@ app.post('/api/chat', async (req, res) => {
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
 
-    const { Transform } = require('stream');
-    const sseTransform = new Transform({
-      transform(chunk, encoding, callback) {
-        try {
-          const jsonStr = chunk.toString().trim();
-          const data = jsonStr.startsWith('data: ') ? jsonStr : `data: ${jsonStr}`;
-          this.push(`${data}\n\n`);
-          callback();
-        } catch (error) {
-          callback(error);
-        }
+    const { PassThrough } = require('stream');
+    const sseStream = new PassThrough();
+    response.body.on('data', chunk => {
+      try {
+        const jsonData = JSON.parse(chunk.toString());
+        sseStream.write(`data: ${JSON.stringify(jsonData.choices[0].delta)}\n\n`);
+      } catch (error) {
+        console.error('Stream parsing error:', error);
       }
     });
 
