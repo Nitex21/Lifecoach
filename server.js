@@ -1,11 +1,12 @@
 const express = require('express');
 const cors = require('cors');
 const fetch = require('node-fetch').default;
+const path = require('path');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
-app.use(express.static(__dirname)); // 添加静态文件服务配置
+app.use('/static', express.static(path.join(__dirname, 'static')));
 
 require('dotenv').config();
 const API_KEY = process.env.API_KEY;
